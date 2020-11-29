@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.6.xsd"
+                   logicalFilePath="jwtrestapp-v1.0.0-2020-11-19_1-init">
+
+    <changeSet id="addTableUsers" author="r.kaminin">
+        <createTable tableName="users">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="username" type="VARCHAR(100)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="email" type="VARCHAR(255)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="first_name" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_name" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="password" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created" type="TIMESTAMP" defaultValue="CURRENT_TIMESTAMP()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated" type="TIMESTAMP" defaultValue="CURRENT_TIMESTAMP()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="VARCHAR(25)" defaultValue="ACTIVE">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <rollback>
+            DROP TABLE users;
+        </rollback>
+    </changeSet>
+
+
+
+    <changeSet id="addTableRoles" author="r.kaminin">
+        <createTable tableName="roles">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(100)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="created" type="TIMESTAMP" defaultValue="CURRENT_TIMESTAMP()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated" type="TIMESTAMP" defaultValue="CURRENT_TIMESTAMP()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="VARCHAR(25)" defaultValue="ACTIVE">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <rollback>
+            DROP TABLE roles;
+        </rollback>
+    </changeSet>
+
+
+    <changeSet id="addTableUserRoles" author="r.kaminin">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="user_roles"/>
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE user_roles(
+            user_id BIGINT,
+            role_id BIGINT
+            )
+        </sql>
+
+        <rollback>
+            DROP TABLE user_roles;
+        </rollback>
+    </changeSet>
+
+    <changeSet id="addFkUserRolesUserId" author="r.kaminin">
+        <addForeignKeyConstraint baseColumnNames="user_id"
+                                 baseTableName="user_roles"
+                                 constraintName="fk_user_roles_user"
+                                 onDelete="CASCADE"
+                                 onUpdate="RESTRICT"
+                                 referencedColumnNames="id"
+                                 referencedTableName="users"/>
+
+        <rollback>
+            <dropForeignKeyConstraint baseTableName="user_roles"
+                                      constraintName="fk_user_roles_user" />
+        </rollback>
+    </changeSet>
+
+    <changeSet id="addFkUserRolesRoleId" author="r.kaminin">
+        <addForeignKeyConstraint baseColumnNames="role_id"
+                                 baseTableName="user_roles"
+                                 constraintName="fk_user_roles_roles"
+                                 onDelete="CASCADE"
+                                 onUpdate="RESTRICT"
+                                 referencedColumnNames="id"
+                                 referencedTableName="roles"/>
+
+        <rollback>
+            <dropForeignKeyConstraint baseTableName="user_roles"
+                                      constraintName="fk_user_roles_roles" />
+        </rollback>
+    </changeSet>
+
+    <changeSet id="addRolesData" author="r.kaminin">
+        <insert tableName="roles">
+            <column name="name" value="ROLE_USER"/>
+        </insert>
+        <insert tableName="roles">
+            <column name="name" value="ROLE_ADMIN"/>
+        </insert>
+
+        <rollback>
+            DELETE FROM roles WHERE name = 'ROLE_USER' OR name = 'ROLE_ADMIN';
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

@@ -1,0 +1,117 @@
+
+apply plugin: 'java'
+apply plugin: 'war'
+apply plugin: 'io.spring.dependency-management'
+apply plugin: 'groovy'
+apply plugin: 'ru.vyarus.quality'
+apply plugin: 'io.freefair.lombok'
+apply plugin: "org.liquibase.gradle"
+
+group 'org.example'
+//version '1.0-SNAPSHOT'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+buildscript {
+    ext {
+        springBootGradleVersion = '2.1.1.RELEASE'
+        liquibaseGradlePluginVersion = '2.0.1'
+        lombokVersion = '4.0.1'
+        qualityVersion = '4.1.0'
+//        mysqlConnectorVersion = '8.0.22'
+    }
+    dependencies {
+        classpath "org.springframework.boot:spring-boot-gradle-plugin:$springBootGradleVersion"
+        classpath "org.liquibase:liquibase-gradle-plugin:$liquibaseGradlePluginVersion"
+        classpath "io.freefair.gradle:lombok-plugin:$lombokVersion"
+        classpath "ru.vyarus:gradle-quality-plugin:$qualityVersion"
+//        classpath 'mysql:mysql-connector-java:5.1.36'
+//        classpath  "mysql:mysql-connector-java:$mysqlConnectorVersion"
+    }
+
+}
+
+ext {
+    springBootStarterJpaVersion = '2.4.0'
+    springBootStarterWebVersion = '2.4.0'
+    springBootStarterSecurity = '2.1.3.RELEASE'
+    liquibaseVersion = '3.6.2'
+    mysqlConnectorVersion = '8.0.15'
+//    mysqlConnectorVersion = '5.1.38'
+    jsonwebtokenVersion = '0.9.1'
+
+    springBootStarterTestVersion = '2.1.2.RELEASE'
+    springSecurityTestVersion = '5.4.1'
+}
+
+dependencies {
+    compile "org.springframework.boot:spring-boot-starter-data-jpa:${springBootStarterJpaVersion}"
+    compile "org.springframework.boot:spring-boot-starter-security:${springBootStarterSecurity}"
+    compile "org.springframework.boot:spring-boot-starter-web:${springBootStarterWebVersion}"
+//    runtime('org.postgresql:postgresql:42.2.1')
+    compile "mysql:mysql-connector-java:${mysqlConnectorVersion}"
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-jdbc', version: '2.4.0'
+    compile "io.jsonwebtoken:jjwt:${jsonwebtokenVersion}"
+
+
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+    testCompile "org.springframework.boot:spring-boot-starter-test:$springBootStarterTestVersion"
+    testCompile "org.springframework.security:spring-security-test:$springSecurityTestVersion"
+
+    liquibaseRuntime "org.liquibase:liquibase-core:$liquibaseVersion"
+}
+
+def changelogMain = "${sourceSets.main.resources.srcDirs[0]}/db/changelog-main.xml"
+liquibase {
+    activities {
+        main {
+            changeLogFile changelogMain
+            Properties dbProperties = new Properties()
+            dbProperties.load(project.file(project.rootDir.path + '/src/main/resources/application.properties').newDataInputStream())
+            url "${dbProperties.getProperty('spring.datasource.url')}"
+            username "${dbProperties.getProperty('spring.datasource.username')}"
+            password "${dbProperties.getProperty('spring.datasource.password')}"
+        }
+
+
+        if (!project.ext.properties.runList) {
+            runList = 'main'
+        } else {
+            runList = project.ext.runList
+        }
+    }
+}
+
+
+quality {
+    autoRegistration = true
+    htmlReports = false
+
+    checkstyleVersion = '8.16'
+    htmlReports = false
+
+    checkstyle = true
+    pmd = false
+    cpd = false
+    spotbugs = true
+    codenarc = false
+
+    /**
+     * Javac lint options to show compiler warnings, not visible by default.
+     * Applies to all CompileJava tasks.
+     * Options will be added as -Xlint:option
+     * Full list of options: http://docs.oracle.com/javase/8/docs/technotes/tools/windows/javac.html#BHCJCABJ
+     */
+    lintOptions = [] //['deprecation', 'unchecked']
+}
+
+def checkstyleConfigDir = project.rootDir.path + "/checkstyle"
+afterEvaluate {
+    checkstyle {
+        configFile = file("$checkstyleConfigDir/checkstyle.xml")
+    }
+}
